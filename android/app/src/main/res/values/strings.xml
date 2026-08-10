@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NAVZLAB Health and Fitness</string>
+    <string name="title_activity_main">NAVZLAB Health and Fitness</string>
+    <string name="package_name">com.navzlab.fitnessapp</string>
+    <string name="custom_url_scheme">com.navzlab.fitnessapp</string>
+</resources>
