@@ -38,6 +38,10 @@ jobs:
 
       - name: Fix line endings and permissions for gradlew
         run: |
+          if [ ! -f android/gradlew ]; then
+            echo "android/gradlew not found, generating wrapper..."
+            cd android && gradle wrapper && cd ..
+          fi
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
 
