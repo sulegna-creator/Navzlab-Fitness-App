@@ -38,6 +38,9 @@ jobs:
 
       - name: Fix line endings and permissions for gradlew
         run: |
+          if [ ! -f android/gradlew ]; then
+            cd android && gradle wrapper --gradle-version 8.12 && cd ..
+          fi
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
 
@@ -50,5 +53,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: android/app/build/outputs/apk/debug/
           if-no-files-found: error
