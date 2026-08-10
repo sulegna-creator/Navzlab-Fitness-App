@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profile information and physical metrics",
+      "properties": {
+        "uid": { "type": "string", "description": "User Firebase Auth UID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "age": { "type": "number", "description": "Age in years" },
+        "height": { "type": "number", "description": "Height in cm" },
+        "weight": { "type": "number", "description": "Weight in kg" },
+        "fitnessLevel": { "type": "string", "description": "Beginner, Intermediate, or Advanced" },
+        "dailyStepGoal": { "type": "number", "description": "Target daily steps" },
+        "dailyWaterGoal": { "type": "number", "description": "Target daily water in liters" },
+        "dailyWorkoutGoal": { "type": "number", "description": "Target daily active workout minutes" },
+        "unitSystem": { "type": "string", "description": "metric or imperial" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Profile creation timestamp" }
+      },
+      "required": ["uid"]
+    },
+    "workouts": {
+      "title": "Workout Record",
+      "description": "Recorded workouts for a user",
+      "properties": {
+        "id": { "type": "string", "description": "Unique workout ID" },
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "type": { "type": "string", "description": "Workout type e.g. Running, Walking, Cycling, Strength, HIIT, Custom" },
+        "durationSeconds": { "type": "number", "description": "Duration in seconds" },
+        "distanceKm": { "type": "number", "description": "Distance in kilometers" },
+        "caloriesBurned": { "type": "number", "description": "Estimated calories burned" },
+        "avgHeartRate": { "type": "number", "description": "Average heart rate BPM" },
+        "maxHeartRate": { "type": "number", "description": "Maximum heart rate BPM" },
+        "feeling": { "type": "string", "description": "Great, Good, Okay, Tired, Dizzy, Pain" },
+        "notes": { "type": "string", "description": "Optional workout notes" },
+        "workoutScore": { "type": "number", "description": "Score 0-100" },
+        "feedback": { "type": "string", "description": "Summary feedback text" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Workout completion time" }
+      },
+      "required": ["userId", "type", "durationSeconds", "timestamp"]
+    },
+    "waterLogs": {
+      "title": "Water Intake Log",
+      "description": "Individual water intake records",
+      "properties": {
+        "id": { "type": "string", "description": "Log ID" },
+        "userId": { "type": "string", "description": "User UID" },
+        "amountMl": { "type": "number", "description": "Water volume added in ml" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Time water was added" }
+      },
+      "required": ["userId", "amountMl", "timestamp"]
+    },
+    "dailyActivities": {
+      "title": "Daily Activity Summary",
+      "description": "Daily aggregated steps, calories, water and score",
+      "properties": {
+        "id": { "type": "string", "description": "Date formatted ID e.g. YYYY-MM-DD" },
+        "userId": { "type": "string", "description": "User UID" },
+        "dateStr": { "type": "string", "description": "YYYY-MM-DD string" },
+        "steps": { "type": "number", "description": "Steps count" },
+        "calories": { "type": "number", "description": "Total active calories" },
+        "activeMinutes": { "type": "number", "description": "Total active minutes" },
+        "distanceKm": { "type": "number", "description": "Total distance in km" },
+        "waterMl": { "type": "number", "description": "Total water logged in ml" },
+        "score": { "type": "number", "description": "Daily activity score 0-100" }
+      },
+      "required": ["userId", "dateStr"]
+    }
+  }
+}

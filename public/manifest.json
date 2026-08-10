@@ -1,0 +1,42 @@
+{
+  "id": "navzlab-health-fitness-app",
+  "short_name": "NAVZLAB",
+  "name": "NAVZLAB Health and Fitness Monitor",
+  "description": "Monitor. Move. Improve. Personal fitness and health tracking companion with workout logging, AI coaching, water tracking, and fitness metrics.",
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090d16",
+  "theme_color": "#10b981",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["health", "fitness", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "NAVZLAB Fitness Dashboard"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "NAVZLAB Workout & Metrics View"
+    }
+  ]
+}

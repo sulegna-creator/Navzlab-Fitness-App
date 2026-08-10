@@ -1,0 +1,6 @@
+{
+  "name": "NAVZLAB Health and Fitness Monitor",
+  "description": "Modern fitness companion app for workout tracking, health activity metrics, AI coaching, progress analytics, water intake, and fitness goals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

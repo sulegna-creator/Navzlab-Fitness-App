@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .font-display {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Custom scrollbar hiding for chips */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area padding for mobile devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+}
