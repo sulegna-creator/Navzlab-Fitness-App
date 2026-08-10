@@ -94,7 +94,7 @@ export const AdRewardModal: React.FC<AdRewardModalProps> = ({
                 AdMob Interstitial Reward
               </span>
               <span className="text-[10px] font-mono text-slate-500">
-                Unit ID: 1554586363
+                Unit ID: 7496198249
               </span>
             </div>
           </div>
