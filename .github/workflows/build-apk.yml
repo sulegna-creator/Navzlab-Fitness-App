@@ -40,7 +40,7 @@ jobs:
         run: |
           if [ ! -f android/gradlew ]; then
             echo "android/gradlew not found, generating wrapper..."
-            cd android && gradle wrapper && cd ..
+            cd android && gradle wrapper --gradle-version 8.12 && cd ..
           fi
           sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
@@ -49,9 +49,11 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug --stacktrace
+          ls -la app/build/outputs/apk/debug/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
