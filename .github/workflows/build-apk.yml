@@ -19,11 +19,10 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
-          # Force install AdMob so the compiler can see it
           npm install @capacitor-community/admob@6.0.0
 
       - name: Build Web Project
-        run: npm run build
+        run: npm run build:web
 
       - name: Install Capacitor CLI
         run: npm install @capacitor/cli@6.0.0 @capacitor/core@6.0.0 @capacitor/android@6.0.0
