@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Bot, Send, Sparkles, Dumbbell, Play, ShieldAlert, Clock, 
-  Target, CheckCircle2, RefreshCw, Zap, Info 
+  Bot, Send, Sparkles, ShieldAlert, RefreshCw, Zap, Play 
 } from 'lucide-react';
 import { AdMob } from '@capacitor-community/admob';
 import { AdMobBanner } from './AdMobBanner';
 import { UserProfile, DailyActivity, WorkoutRecord, AIChatMessage, AIWorkoutPlan } from '../types';
 
-// --- CHANGE THIS TO YOUR LIVE BACKEND URL ---
-const API_BASE_URL = 'https://navzlab-fitness.onrender.com'; 
+// --- PASTE YOUR RENDER URL HERE ---
+const API_BASE_URL = 'https://navzlab-fitness-app.onrender.com'; 
 
 interface AICoachPageProps {
   userProfile: UserProfile;
@@ -31,7 +30,7 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
     {
       id: 'welcome-1',
       sender: 'ai',
-      text: `Hello ${userProfile.displayName || 'Athlete'}! I am your NAVZLAB AI Coach. How can I help you today?`,
+      text: `Hello ${userProfile.displayName || 'Athlete'}! I am your NAVZLAB AI Coach. I can analyze your stats and suggest tailored workouts. How can I help you today?`,
       timestamp: new Date().toISOString()
     }
   ]);
@@ -49,6 +48,7 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Initialize AdMob Engine
     AdMob.initialize({ testingDevices: [], initializeForTesting: true });
   }, []);
 
@@ -56,6 +56,7 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // --- MONETIZATION: SHOW FULL SCREEN AD ---
   const triggerInterstitialAd = async () => {
     try {
       await AdMob.prepareInterstitial({ adId: 'ca-app-pub-3940256099942544/1033173712' });
@@ -63,11 +64,12 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
     } catch (e) { console.log('AdMob skip:', e); }
   };
 
+  // --- AI CHAT LOGIC ---
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputMessage;
     if (!text.trim() || isSending) return;
 
-    // Show ad every 3 messages (Non-blocking so AI can start)
+    // Show Ad every 3 messages
     if (msgCountSinceAd >= 2) {
       triggerInterstitialAd();
       setMsgCountSinceAd(0);
@@ -81,7 +83,6 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
     setIsSending(true);
 
     try {
-      // UPDATED TO USE FULL URL
       const res = await fetch(`${API_BASE_URL}/api/ai/coach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,24 +93,21 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
       setMessages((prev) => [...prev, {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: data.reply || "I'm here to support your fitness goals safely.",
+        text: data.reply || "I'm processing your fitness data. One moment...",
         timestamp: new Date().toISOString()
       }]);
     } catch (err) {
-      console.error(err);
-      setMessages((prev) => [...prev, { id: 'err', sender: 'ai', text: "Connection error. Please check your internet.", timestamp: new Date().toISOString() }]);
+      setMessages((prev) => [...prev, { id: 'err', sender: 'ai', text: "AI is offline. Check Render backend.", timestamp: new Date().toISOString() }]);
     } finally { setIsSending(false); }
   };
 
+  // --- AI WORKOUT GENERATOR LOGIC ---
   const handleGenerateWorkout = async () => {
     setIsGenerating(true);
     setGeneratedPlan(null);
-
-    // Show ad while AI generates (Non-blocking)
-    triggerInterstitialAd();
+    triggerInterstitialAd(); // Monetize the generation
 
     try {
-      // UPDATED TO USE FULL URL
       const res = await fetch(`${API_BASE_URL}/api/ai/generate-workout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,52 +122,80 @@ export const AICoachPage: React.FC<AICoachPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-24 pt-2">
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-br from-teal-950/60 via-slate-900 to-slate-900 border border-teal-500/30 rounded-3xl p-5 space-y-3 shadow-xl">
-        <div className="flex items-center justify-between">
+      <div className="p-4 bg-slate-900 border-b border-slate-800">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold"><Bot className="w-6 h-6" /></div>
-            <div>
-              <h1 className="text-xl font-black text-slate-100">NAVZLAB AI COACH</h1>
-              <p className="text-xs text-teal-400 font-semibold">Monitor. Move. Improve.</p>
-            </div>
+            <Bot className="w-8 h-8 text-teal-400" />
+            <h1 className="text-lg font-black tracking-tighter uppercase italic">NAVZLAB AI</h1>
           </div>
+          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-full font-bold">Premium Active</span>
         </div>
-        <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
-          <button onClick={() => setActiveSubTab('chat')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${activeSubTab === 'chat' ? 'bg-teal-500 text-slate-950' : 'text-slate-400'}`}>💬 Chat</button>
-          <button onClick={() => setActiveSubTab('generator')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${activeSubTab === 'generator' ? 'bg-teal-500 text-slate-950' : 'text-slate-400'}`}>⚡ Create Workout</button>
+        
+        <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button onClick={() => setActiveSubTab('chat')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeSubTab === 'chat' ? 'bg-teal-500 text-slate-950' : 'text-slate-400'}`}>Chat Coach</button>
+          <button onClick={() => setActiveSubTab('generator')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeSubTab === 'generator' ? 'bg-teal-500 text-slate-950' : 'text-slate-400'}`}>Workout Gen</button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      {activeSubTab === 'chat' ? (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl flex flex-col h-[480px]">
-          <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs ${msg.sender === 'user' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-950 text-slate-200 border border-slate-800'}`}>
-                  <p>{msg.text}</p>
-                </div>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {activeSubTab === 'chat' ? (
+          <div className="flex flex-col h-full space-y-4">
+             <div className="flex-1 space-y-4 overflow-y-auto">
+                {messages.map(msg => (
+                  <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] p-3 rounded-2xl text-xs ${msg.sender === 'user' ? 'bg-teal-500 text-slate-950 rounded-tr-none' : 'bg-slate-900 text-slate-200 border border-slate-800 rounded-tl-none'}`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isSending && <div className="text-teal-400 text-[10px] animate-pulse italic">Coach is typing...</div>}
+                <div ref={chatEndRef} />
+             </div>
+             
+             <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex gap-2 p-2 bg-slate-900 rounded-2xl border border-slate-800">
+               <input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder="Ask about your workout..." className="flex-1 bg-transparent border-none text-xs focus:ring-0" />
+               <button type="submit" className="p-2 bg-teal-500 rounded-xl text-slate-950"><Send className="w-4 h-4" /></button>
+             </form>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center gap-2 pt-2 border-t border-slate-800">
-            <input type="text" placeholder="Ask AI..." value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} className="flex-1 px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-slate-100 text-xs focus:outline-none" />
-            <button type="submit" className="p-3 rounded-2xl bg-teal-500 text-slate-950"><Send className="w-4 h-4" /></button>
-          </form>
-        </div>
-      ) : (
-        /* Generator View (Same as your previous logic) */
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-5">
-           <button onClick={handleGenerateWorkout} className="w-full py-4 rounded-2xl bg-teal-500 text-slate-950 font-black">GENERATE AI WORKOUT</button>
-           {generatedPlan && <div className="text-white p-4 bg-slate-950 rounded-xl">Plan: {generatedPlan.title}</div>}
-        </div>
-      )}
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Equipment</label>
+                    <select value={genEquipment} onChange={(e) => setGenEquipment(e.target.value)} className="w-full bg-slate-950 border-slate-800 rounded-xl text-xs text-white">
+                      <option value="None">Bodyweight</option><option value="Dumbbells">Dumbbells</option><option value="Gym">Full Gym</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Duration</label>
+                    <select value={genDuration} onChange={(e) => setGenDuration(Number(e.target.value))} className="w-full bg-slate-950 border-slate-800 rounded-xl text-xs text-white">
+                      <option value={15}>15m</option><option value={30}>30m</option><option value={45}>45m</option>
+                    </select>
+                  </div>
+                </div>
+                <button onClick={handleGenerateWorkout} className="w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-black rounded-2xl flex items-center justify-center gap-2">
+                  {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  GENERATE PLAN
+                </button>
+            </div>
+            {generatedPlan && (
+              <div className="bg-slate-900 border border-teal-500/30 rounded-3xl p-5 space-y-4">
+                <h3 className="font-black text-teal-400">{generatedPlan.title}</h3>
+                <button onClick={() => onStartCustomAIWorkout(generatedPlan)} className="w-full py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-xs">Start Now</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* Banner Ad Placement */}
-      <AdMobBanner />
+      {/* Banner Ad Area (Above Navigation) */}
+      <div className="bg-slate-950 border-t border-slate-900 px-4 pt-2 pb-24">
+        <AdMobBanner />
+      </div>
     </div>
   );
 };
