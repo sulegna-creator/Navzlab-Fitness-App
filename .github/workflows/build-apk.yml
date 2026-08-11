@@ -17,12 +17,7 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: |
-          # 1. Clean install based on package.json
-          npm install
-          
-          # 2. Force-fix missing modules that caused previous errors
-          npm install canvas-confetti@1.9.3 @tailwindcss/vite@4.0.0 @capacitor-community/admob@6.0.0
+        run: npm install
 
       - name: Build Web Project
         run: npm run build:web
@@ -32,20 +27,14 @@ jobs:
 
       - name: Recreate Android Project
         run: |
-          # Save your Firebase config to a safe spot
           mkdir -p tmp_config
-          cp android/app/google-services.json tmp_config/google-services.json || echo "No Firebase file found"
-          
-          # Wipe the hollow folder and rebuild it properly
+          cp android/app/google-services.json tmp_config/google-services.json || echo "No Firebase file"
           rm -rf android
           npx cap add android
-          
-          # Put your Firebase file back into the fresh folder
-          cp tmp_config/google-services.json android/app/google-services.json || echo "Skipping copy"
+          cp tmp_config/google-services.json android/app/google-services.json || echo "Skipping Firebase copy"
 
       - name: Inject AdMob App ID
         run: |
-          # This injects the ID into the Manifest to prevent the "Auto-Close" crash
           sed -i 's/<application/<application>\n        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>/' android/app/src/main/AndroidManifest.xml
 
       - name: Sync Capacitor
@@ -66,5 +55,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fitness-app-final-version
+          name: fitness-app-final-build
           path: android/app/build/outputs/apk/debug/app-debug.apk
