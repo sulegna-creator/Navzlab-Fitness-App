@@ -28,14 +28,19 @@ jobs:
       - name: Recreate Android Project
         run: |
           mkdir -p tmp_config
-          cp android/app/google-services.json tmp_config/google-services.json || echo "No Firebase file"
+          cp android/app/google-services.json tmp_config/google-services.json || echo "No Firebase"
           rm -rf android
           npx cap add android
-          cp tmp_config/google-services.json android/app/google-services.json || echo "Skipping Firebase copy"
+          cp tmp_config/google-services.json android/app/google-services.json || echo "No Copy"
 
-      - name: Inject AdMob App ID
+      - name: Force App Identity & AdMob Fix
         run: |
-          sed -i 's/<application/<application>\n        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>/' android/app/src/main/AndroidManifest.xml
+          # 1. Fix the App Name (So it doesn't show the package name)
+          sed -i 's/app_name">.*</app_name">NAVZLAB Health</' android/app/src/main/res/values/strings.xml
+          sed -i 's/title_activity_main">.*</title_activity_main">NAVZLAB Health</' android/app/src/main/res/values/strings.xml
+          
+          # 2. Inject AdMob ID (Crash Fix)
+          sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' android/app/src/main/AndroidManifest.xml
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -55,5 +60,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fitness-app-final-build
+          name: NAVZLAB-Final-Fix
           path: android/app/build/outputs/apk/debug/app-debug.apk
