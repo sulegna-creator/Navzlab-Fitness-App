@@ -8,7 +8,7 @@ import { AdMobBanner } from './AdMobBanner';
 import { UserProfile, DailyActivity, WorkoutRecord, AIChatMessage, AIWorkoutPlan } from '../types';
 
 // --- CHANGE THIS TO YOUR LIVE BACKEND URL ---
-const API_BASE_URL = 'https://YOUR-BACKEND-URL-HERE.com'; 
+const API_BASE_URL = 'https://navzlab-fitness.onrender.com'; 
 
 interface AICoachPageProps {
   userProfile: UserProfile;
