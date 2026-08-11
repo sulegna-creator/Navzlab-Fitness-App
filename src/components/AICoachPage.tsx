@@ -12,17 +12,18 @@ export const AICoachPage = ({ userProfile }: any) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    AdMob.initialize({ initializeForTesting: true });
+    const initAdMob = async () => {
+      try {
+        // Initialize with a check to prevent crashes if it's already running
+        await AdMob.initialize({
+          initializeForTesting: true,
+        });
+      } catch (e) {
+        console.log("AdMob already active or failed quietly");
+      }
+    };
+    initAdMob();
   }, []);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
-  const showAd = async () => {
-    try {
-      await AdMob.prepareInterstitial({ adId: 'ca-app-pub-3940256099942544/1033173712' });
-      await AdMob.showInterstitial();
-    } catch (e) { console.log(e); }
-  };
 
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
