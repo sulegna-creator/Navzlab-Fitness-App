@@ -1,1 +1,33 @@
-
+{
+  "project_info": {
+    "project_number": "410660970265",
+    "project_id": "shaped-xylopolist-5q6d2",
+    "storage_bucket": "shaped-xylopolist-5q6d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:410660970265:android:b7204c338873ee14cefb017b",
+        "android_client_info": {
+          "package_name": "io.ionic.starter"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCPDplwnlrhPpNQPoQjcxHP5yWfZw6uVg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "410660970265-t5k6td8q6j3882n0b1ia61st332hc8ea.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
