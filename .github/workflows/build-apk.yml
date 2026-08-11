@@ -35,9 +35,10 @@ jobs:
           npx cap add android
           cp tmp_config/google-services.json android/app/google-services.json || echo "Skipping Firebase copy"
 
-      - name: Inject AdMob App ID into AndroidManifest
+      - name: Inject AdMob App ID (CRASH FIX)
         run: |
-          sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' android/app/src/main/AndroidManifest.xml
+          # This injects the ID into the Android Manifest so the app stays open
+          sed -i 's/<application/<application>\n        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>/' android/app/src/main/AndroidManifest.xml
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -57,5 +58,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fitness-app-with-ads
+          name: fitness-app-final
           path: android/app/build/outputs/apk/debug/app-debug.apk
