@@ -33,15 +33,14 @@ jobs:
           npx cap add android
           cp tmp_config/google-services.json android/app/google-services.json || echo "No Copy"
 
-      - name: Force App Identity & AdMob Fix
+      - name: Inject AdMob & Fix Identity
         run: |
-          # 1. Fix the App Name in strings.xml
+          # 1. Force the App Name
           sed -i 's/app_name">.*</app_name">NAVZLAB Health</' android/app/src/main/res/values/strings.xml
-          sed -i 's/title_activity_main">.*</title_activity_main">NAVZLAB Health</' android/app/src/main/res/values/strings.xml
           
-          # 2. Inject AdMob ID (CRASH FIX)
-          # This version replaces the </application> tag with the AdMob metadata + the tag
-          sed -i 's/<\/application>/    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>\n    <\/application>/' android/app/src/main/AndroidManifest.xml
+          # 2. Crash Fix: Inject AdMob ID safely
+          # This inserts the metadata line right after the opening <application> tag
+          sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' android/app/src/main/AndroidManifest.xml
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -61,5 +60,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NAVZLAB-Success-Build
+          name: NAVZLAB-RESCUE-BUILD
           path: android/app/build/outputs/apk/debug/app-debug.apk
