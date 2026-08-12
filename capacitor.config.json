@@ -2,6 +2,7 @@
   "appId": "com.navzlab.fitness",
   "appName": "NAVZLAB Health",
   "webDir": "dist",
+  "bundledWebRuntime": false,
   "plugins": {
     "AdMob": {
       "androidAppId": "ca-app-pub-3940256099942544~3347511713"
