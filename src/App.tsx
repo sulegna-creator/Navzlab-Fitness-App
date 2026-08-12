@@ -1,144 +1,207 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Home, 
-  Dumbbell, 
-  LineChart, 
-  Bot, 
-  User,
-  Heart,
-  Timer,
-  Zap,
-  Flame,
-  Droplets,
-  Calendar,
-  ChevronRight,
-  TrendingUp,
-  Award,
-  Plus
-} from 'lucide-react';
-// --- ADDED THESE IMPORTS ---
-import { AdMob } from '@capacitor-community/admob';
-import { Capacitor } from '@capacitor/core';
-
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { auth, db } from './lib/firebase';
+import { NavTab, Navigation } from './components/Navigation';
+import { Header } from './components/Header';
 import { HomeDashboard } from './components/HomeDashboard';
-import { WorkoutPage } from './components/WorkoutPage';
+import { WorkoutScreen } from './components/WorkoutScreen';
 import { ProgressPage } from './components/ProgressPage';
 import { AICoachPage } from './components/AICoachPage';
 import { ProfileSettingsPage } from './components/ProfileSettingsPage';
 import { AuthModal } from './components/AuthModal';
-import { UserProfile, DailyActivity, WorkoutRecord, AIWorkoutPlan } from './types';
+import { SafetyDisclaimerModal } from './components/SafetyDisclaimerModal';
+import { AdRewardModal } from './components/AdRewardModal';
+import { AmazonAppstoreGuideModal } from './components/AmazonAppstoreGuideModal';
+import { MonetizationHubModal, UnlockableModule } from './components/MonetizationHubModal';
+import { IapCheckoutModal } from './components/IapCheckoutModal';
+import { AdMobBanner } from './components/AdMobBanner';
 
-function App() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  
-  // --- ADDED ADMOB INITIALIZATION ---
+// --- ADDED NATIVE IMPORTS ---
+import { AdMob } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
+
+import { UserProfile, WorkoutRecord, DailyActivity, WaterLog, AIWorkoutPlan } from './types';
+import { DEFAULT_USER_PROFILE, DEMO_WORKOUTS, DEMO_WATER_LOGS, getTodayDateStr } from './utils/initialData';
+import { calculateDailyActivityScore } from './utils/activityScore';
+
+export function App() {
+  const [activeTab, setActiveTab] = useState<NavTab>('home');
+  const [darkMode, setDarkMode] = useState<boolean>(true);
+  const [simulatedHeartRate, setSimulatedHeartRate] = useState<number | null>(128);
+
+  // --- ADDED CRASH-PROOF ADMOB INIT ---
   useEffect(() => {
-    const initAdMob = async () => {
-      // Only run on real phone to prevent browser crashes
+    const startAdMob = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
           await AdMob.initialize({
-            initializeForTesting: true, // Set to false when you go to Play Store
+            initializeForTesting: true, // Google Test Mode
           });
-          console.log("AdMob Engine Ready 🚀");
+          console.log("AdMob Engine Ready");
         } catch (e) {
-          console.log("AdMob already running or failed quietly");
+          console.log("AdMob init failed quietly", e);
         }
       }
     };
-    initAdMob();
+    startAdMob();
   }, []);
 
-  // Mock data for initial state
-  const [dailyActivity, setDailyActivity] = useState<DailyActivity>({
-    id: new Date().toISOString().split('T')[0],
-    userId: 'user123',
-    dateStr: new Date().toISOString().split('T')[0],
-    steps: 6432,
-    calories: 320,
-    activeMinutes: 42,
-    distanceKm: 4.8,
-    waterMl: 1200,
-    score: 72
+  // User Profile
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('navzlab_profile');
+    return saved ? JSON.parse(saved) : DEFAULT_USER_PROFILE;
   });
 
-  const [recentWorkouts, setRecentWorkouts] = useState<WorkoutRecord[]>([
-    {
-      id: 'w1',
-      userId: 'user123',
-      type: 'Running',
-      durationSeconds: 1800,
-      caloriesBurned: 350,
-      timestamp: new Date(Date.now() - 86400000).toISOString(),
-      feeling: 'Good',
-      workoutScore: 85,
-      feedback: "Great consistency! You maintained a steady pace throughout the run."
-    },
-    {
-      id: 'w2',
-      userId: 'user123',
-      type: 'Strength',
-      durationSeconds: 2700,
-      caloriesBurned: 280,
-      timestamp: new Date(Date.now() - 172800000).toISOString(),
-      feeling: 'Great',
-      workoutScore: 92,
-      feedback: "Excellent intensity. Your heart rate recovery was optimal."
-    }
-  ]);
+  // ... (Rest of your state management remains exactly the same)
+  const [workoutHistory, setWorkoutHistory] = useState<WorkoutRecord[]>(() => {
+    const saved = localStorage.getItem('navzlab_workouts');
+    return saved ? JSON.parse(saved) : DEMO_WORKOUTS;
+  });
+  const [waterLogs, setWaterLogs] = useState<WaterLog[]>(() => {
+    const saved = localStorage.getItem('navzlab_water');
+    return saved ? JSON.parse(saved) : DEMO_WATER_LOGS;
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+  const [customAIPlan, setCustomAIPlan] = useState<AIWorkoutPlan | null>(null);
+  const [isPremium, setIsPremium] = useState<boolean>(() => localStorage.getItem('navzlab_is_premium') === 'true');
+  const [unlockedModules, setUnlockedModules] = useState<string[]>(() => {
+    const saved = localStorage.getItem('navzlab_unlocked');
+    return saved ? JSON.parse(saved) : ['pro_hiit_masterclass'];
+  });
+  const [adCoins, setAdCoins] = useState<number>(() => {
+    const saved = localStorage.getItem('navzlab_coins');
+    return saved ? parseInt(saved, 10) : 50;
+  });
+  const [isAdModalOpen, setIsAdModalOpen] = useState(false);
+  const [activeAdModule, setActiveAdModule] = useState<{ id: string; title: string } | null>(null);
+  const [isAmazonGuideOpen, setIsAmazonGuideOpen] = useState(false);
+  const [isMonetizationHubOpen, setIsMonetizationHubOpen] = useState(false);
+  const [isIapModalOpen, setIsIapModalOpen] = useState(false);
 
-  const handleStartCustomAIWorkout = (plan: AIWorkoutPlan) => {
-    console.log("Starting AI Plan:", plan.title);
-    setActiveTab('workout');
+  useEffect(() => { localStorage.setItem('navzlab_is_premium', isPremium ? 'true' : 'false'); }, [isPremium]);
+  useEffect(() => { localStorage.setItem('navzlab_unlocked', JSON.stringify(unlockedModules)); }, [unlockedModules]);
+  useEffect(() => { localStorage.setItem('navzlab_coins', adCoins.toString()); }, [adCoins]);
+
+  const handleConfirmLifetimePurchase = () => {
+    setIsPremium(true);
+    setUnlockedModules(['pro_hiit_masterclass', 'ai_macro_meal_planner', 'cardio_strain_recovery']);
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'home':
-        return <HomeDashboard dailyActivity={dailyActivity} recentWorkouts={recentWorkouts} onWaterAdd={(ml) => setDailyActivity(prev => ({ ...prev, waterMl: prev.waterMl + ml }))} />;
-      case 'workout':
-        return <WorkoutPage onWorkoutComplete={(workout) => setRecentWorkouts(prev => [workout, ...prev])} />;
-      case 'progress':
-        return <ProgressPage dailyActivity={dailyActivity} workouts={recentWorkouts} />;
-      case 'ai-coach':
-        return <AICoachPage userProfile={userProfile || { uid: 'guest', displayName: 'Athlete' } as any} dailyActivity={dailyActivity} recentWorkouts={recentWorkouts} onStartCustomAIWorkout={handleStartCustomAIWorkout} />;
-      case 'profile':
-        return <ProfileSettingsPage userProfile={userProfile} onAuthClick={() => setShowAuthModal(true)} />;
-      default:
-        return <HomeDashboard dailyActivity={dailyActivity} recentWorkouts={recentWorkouts} onWaterAdd={(ml) => setDailyActivity(prev => ({ ...prev, waterMl: prev.waterMl + ml }))} />;
+  const handleUnlockModuleSuccess = (moduleId: string) => {
+    if (!unlockedModules.includes(moduleId)) setUnlockedModules((prev) => [...prev, moduleId]);
+    setAdCoins((prev) => prev + 50);
+  };
+
+  const handleWatchAdForModule = (module: UnlockableModule) => {
+    setActiveAdModule({ id: module.id, title: module.title });
+    setIsAdModalOpen(true);
+  };
+
+  const handleSpendCoinsToUnlock = (module: UnlockableModule) => {
+    if (adCoins >= module.coinCost) {
+      setAdCoins((prev) => prev - module.coinCost);
+      if (!unlockedModules.includes(module.id)) setUnlockedModules((prev) => [...prev, module.id]);
     }
   };
+
+  useEffect(() => {
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  }, [darkMode]);
+
+  useEffect(() => { localStorage.setItem('navzlab_profile', JSON.stringify(userProfile)); }, [userProfile]);
+  useEffect(() => { localStorage.setItem('navzlab_workouts', JSON.stringify(workoutHistory)); }, [workoutHistory]);
+  useEffect(() => { localStorage.setItem('navzlab_water', JSON.stringify(waterLogs)); }, [waterLogs]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data() as UserProfile;
+            setUserProfile({ ...data, isGuest: false });
+          } else {
+            const newProfile: UserProfile = { ...userProfile, uid: firebaseUser.uid, displayName: firebaseUser.displayName || 'Athlete', email: firebaseUser.email || '', isGuest: false };
+            await setDoc(userDocRef, newProfile);
+            setUserProfile(newProfile);
+          }
+          const wQuery = query(collection(db, 'workouts'), where('userId', '==', firebaseUser.uid));
+          const wSnap = await getDocs(wQuery);
+          if (!wSnap.empty) {
+            const remoteWorkouts: WorkoutRecord[] = wSnap.docs.map(docSnap => ({ ...(docSnap.data() as WorkoutRecord), id: docSnap.id }));
+            setWorkoutHistory(remoteWorkouts);
+          }
+        } catch (err) { console.error("Firestore sync error:", err); }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const todayStr = getTodayDateStr();
+  const todayWaterMl = waterLogs.filter(log => log.timestamp.startsWith(todayStr)).reduce((sum, log) => sum + log.amountMl, 0);
+  const todayWorkouts = workoutHistory.filter(w => w.timestamp.startsWith(todayStr));
+  const todayActiveMins = todayWorkouts.reduce((sum, w) => sum + Math.floor(w.durationSeconds / 60), 0);
+  const todayCalories = todayWorkouts.reduce((sum, w) => sum + w.caloriesBurned, 0);
+  const todayDistance = todayWorkouts.reduce((sum, w) => sum + w.distanceKm, 0);
+  const todaySteps = Math.round(todayDistance * 1350 + todayActiveMins * 85);
+  const todayScore = calculateDailyActivityScore(todaySteps, userProfile.dailyStepGoal, todayActiveMins, userProfile.dailyWorkoutGoalMin, todayWaterMl, userProfile.dailyWaterGoalL * 1000, todayCalories);
+
+  const dailyActivity: DailyActivity = {
+    id: todayStr, userId: userProfile.uid, dateStr: todayStr, steps: Math.max(todaySteps, 6842), calories: Math.max(todayCalories, 326),
+    activeMinutes: Math.max(todayActiveMins, 42), distanceKm: Math.max(todayDistance, 5.2), waterMl: todayWaterMl > 0 ? todayWaterMl : 1600,
+    heartRateAvg: simulatedHeartRate, score: todayScore > 0 ? todayScore : 87
+  };
+
+  const handleAddWater = async (amountMl: number) => {
+    const newLog: WaterLog = { id: `water-${Date.now()}`, userId: userProfile.uid, amountMl, timestamp: new Date().toISOString() };
+    setWaterLogs((prev) => [newLog, ...prev]);
+    if (!userProfile.isGuest && auth.currentUser) {
+      try { await addDoc(collection(db, 'waterLogs'), newLog); } catch (err) { console.error(err); }
+    }
+  };
+
+  const handleRemoveLastWater = () => setWaterLogs((prev) => prev.slice(1));
+
+  const handleSaveWorkout = async (workoutData: Omit<WorkoutRecord, 'id' | 'userId'>) => {
+    const newRecord: WorkoutRecord = { ...workoutData, id: `workout-${Date.now()}`, userId: userProfile.uid };
+    setWorkoutHistory((prev) => [newRecord, ...prev]);
+    if (!userProfile.isGuest && auth.currentUser) {
+      try { await addDoc(collection(db, 'workouts'), newRecord); } catch (err) { console.error(err); }
+    }
+  };
+
+  const handlePopulateDemoData = () => { setWorkoutHistory(DEMO_WORKOUTS); setWaterLogs(DEMO_WATER_LOGS); setUserProfile(DEFAULT_USER_PROFILE); };
+  const handleClearAllData = () => { setWorkoutHistory([]); setWaterLogs([]); localStorage.removeItem('navzlab_workouts'); localStorage.removeItem('navzlab_water'); };
+  const handleStartCustomAIWorkout = (plan: AIWorkoutPlan) => { setCustomAIPlan(plan); setActiveTab('workout'); };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
-      <main className="max-w-md mx-auto min-h-screen relative shadow-2xl shadow-emerald-900/10">
-        <div className="pb-24 pt-4 px-4">
-          {renderContent()}
-        </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
+      <Header userProfile={userProfile} darkMode={darkMode} setDarkMode={setDarkMode} onOpenAuth={() => setIsAuthModalOpen(true)} onOpenDisclaimer={() => setIsDisclaimerOpen(true)} onOpenAmazonGuide={() => setIsAmazonGuideOpen(true)} onOpenAdRewards={() => setIsMonetizationHubOpen(true)} adCoins={adCoins} isPremium={isPremium} />
 
-        {/* Floating Bottom Navigation */}
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-2 flex items-center justify-between shadow-2xl z-50">
-          <NavItem active={activeTab === 'home'} icon={<Home />} label="Home" onClick={() => setActiveTab('home')} />
-          <NavItem active={activeTab === 'workout'} icon={<Dumbbell />} label="Workout" onClick={() => setActiveTab('workout')} />
-          <NavItem active={activeTab === 'progress'} icon={<LineChart />} label="Progress" onClick={() => setActiveTab('progress')} />
-          <NavItem active={activeTab === 'ai-coach'} icon={<Bot />} label="AI Coach" onClick={() => setActiveTab('ai-coach')} />
-          <NavItem active={activeTab === 'profile'} icon={<User />} label="Profile" onClick={() => setActiveTab('profile')} />
-        </nav>
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pt-3">
+        {activeTab === 'home' && <HomeDashboard userProfile={userProfile} dailyActivity={dailyActivity} recentWorkout={workoutHistory[0]} onStartWorkout={() => setActiveTab('workout')} onAddWater={handleAddWater} onRemoveLastWater={handleRemoveLastWater} onNavigateTab={(tab) => setActiveTab(tab)} simulatedHeartRate={simulatedHeartRate} toggleHeartRateSensor={() => setSimulatedHeartRate(simulatedHeartRate ? null : 128)} />}
+        {activeTab === 'workout' && <WorkoutScreen userProfile={userProfile} onSaveWorkout={handleSaveWorkout} onNavigateTab={(tab) => setActiveTab(tab)} simulatedHeartRate={simulatedHeartRate} toggleHeartRateSensor={() => setSimulatedHeartRate(simulatedHeartRate ? null : 128)} customAIPlan={customAIPlan} />}
+        {activeTab === 'progress' && <ProgressPage userProfile={userProfile} workoutHistory={workoutHistory} dailyActivity={dailyActivity} />}
+        {activeTab === 'aicoach' && <AICoachPage userProfile={userProfile} dailyActivity={dailyActivity} recentWorkouts={workoutHistory} onStartCustomAIWorkout={handleStartCustomAIWorkout} />}
+        {activeTab === 'profile' && <ProfileSettingsPage userProfile={userProfile} onUpdateProfile={(updated) => setUserProfile({ ...userProfile, ...updated })} onPopulateDemoData={handlePopulateDemoData} onClearAllData={handleClearAllData} onOpenAuthModal={() => setIsAuthModalOpen(true)} darkMode={darkMode} setDarkMode={setDarkMode} onOpenAmazonGuide={() => setIsAmazonGuideOpen(true)} onOpenAdRewards={() => setIsMonetizationHubOpen(true)} isPremium={isPremium} onUnlockLifetimePremium={() => setIsIapModalOpen(true)} />}
+
+        {/* This will only show if AdMob initialized successfully */}
+        <AdMobBanner publisherId="ca-app-pub-3940256099942544" adSlot="6300978111" className="pb-16" />
       </main>
 
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onAuthSuccess={(profile) => { setUserProfile(profile); setShowAuthModal(false); }} />}
-    </div>
-  );
-}
+      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
-function NavItem({ active, icon, label, onClick }: { active: boolean, icon: React.ReactNode, label: string, onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ${active ? 'bg-emerald-500 text-slate-950 scale-110 shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-300'}`}>
-      {React.cloneElement(icon as React.ReactElement, { size: 20, strokeWidth: active ? 2.5 : 2 })}
-      <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">{label}</span>
-    </button>
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} userProfile={userProfile} onAuthSuccess={(authData) => setUserProfile((prev) => ({ ...prev, ...authData }))} />
+      <SafetyDisclaimerModal isOpen={isDisclaimerOpen} onClose={() => setIsDisclaimerOpen(false)} />
+      <AdRewardModal isOpen={isAdModalOpen} onClose={() => setIsAdModalOpen(false)} moduleTitle={activeAdModule?.title || 'Pro Feature Unlock'} moduleId={activeAdModule?.id || 'pro_module'} onSuccessUnlock={handleUnlockModuleSuccess} />
+      <AmazonAppstoreGuideModal isOpen={isAmazonGuideOpen} onClose={() => setIsAmazonGuideOpen(false)} />
+      <MonetizationHubModal isOpen={isMonetizationHubOpen} onClose={() => setIsMonetizationHubOpen(false)} unlockedModules={unlockedModules} adCoins={adCoins} isPremium={isPremium} onWatchAdForModule={handleWatchAdForModule} onSpendCoinsToUnlock={handleSpendCoinsToUnlock} onUnlockLifetimePremium={() => setIsIapModalOpen(true)} onOpenAmazonGuide={() => setIsAmazonGuideOpen(true)} />
+      <IapCheckoutModal isOpen={isIapModalOpen} onClose={() => setIsIapModalOpen(false)} onConfirmPurchase={handleConfirmLifetimePurchase} />
+    </div>
   );
 }
 
