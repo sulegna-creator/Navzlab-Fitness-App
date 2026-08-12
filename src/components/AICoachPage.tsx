@@ -1,3 +1,4 @@
+const API_BASE_URL = 'https://navzlab-fitness.onrender.com';
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Sparkles, ShieldAlert, RefreshCw } from 'lucide-react';
 import { AdMob } from '@capacitor-community/admob';
