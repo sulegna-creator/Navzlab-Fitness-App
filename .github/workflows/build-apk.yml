@@ -30,18 +30,17 @@ jobs:
           rm -rf android
           npx cap add android
           mkdir -p android/app
-          # SYNCED TO com.navzlab.fitnessapp
           echo '{"project_info":{"project_number":"410660970265","project_id":"shaped-xylopolist-5q6d2","storage_bucket":"shaped-xylopolist-5q6d2.firebasestorage.app"},"client":[{"client_info":{"mobilesdk_app_id":"1:410660970265:android:b7204c338873ee14cefb017b","android_client_info":{"package_name":"com.navzlab.fitnessapp"}},"api_key":[{"current_key":"AIzaSyDCPDplwnlrhPpNQPoQjcxHP5yWfZw6uVg"}],"services":{"appinvite_service":{"other_platform_oauth_client":[{"client_id":"410660970265-t5k6td8q6j3882n0b1ia61st332hc8ea.apps.googleusercontent.com","client_type":3}]}}}]}' > android/app/google-services.json
 
-      - name: AdMob & Network Fix
+      - name: AdMob & Identity Fix
         run: |
           echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">NAVZLAB Health</string><string name="title_activity_main">NAVZLAB Health</string></resources>' > android/app/src/main/res/values/strings.xml
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' android/app/src/main/AndroidManifest.xml
           sed -i '/<\/manifest>/i \    <queries><package android:name="com.android.vending" /><\/queries>' android/app/src/main/AndroidManifest.xml
 
-      - name: Sync Capacitor
-        run: npx cap sync android
+      - name: Sync Web Assets to Android
+        run: npx cap copy android
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -58,5 +57,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NAVZLAB-STABLE-V110
+          name: NAVZLAB-STABLE-V111
           path: android/app/build/outputs/apk/debug/app-debug.apk
