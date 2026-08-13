@@ -13,12 +13,11 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.post('/api/ai/coach', async (req, res) => {
   try {
-    const { message, userProfile } = req.body;
-    const prompt = `Navzlab AI Coach: Answer "${message}" for ${userProfile?.displayName || 'User'}`;
-    const result = await model.generateContent(prompt);
+    const { message } = req.body;
+    const result = await model.generateContent(message);
     res.json({ reply: result.response.text() });
   } catch (err) {
-    res.status(500).json({ error: "AI Busy" });
+    res.status(500).json({ error: "AI is resting." });
   }
 });
 
