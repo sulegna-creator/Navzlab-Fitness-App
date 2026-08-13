@@ -1,5 +1,5 @@
 {
-  "appId": "com.navzlab.fitnessapp",
+  "appId": "com.navzlab.fitness",
   "appName": "NAVZLAB Health",
   "webDir": "dist",
   "bundledWebRuntime": false,
