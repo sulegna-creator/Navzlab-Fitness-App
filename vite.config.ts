@@ -4,10 +4,11 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // THIS IS THE CRITICAL LINE TO FIX THE BLACK SCREEN
-  base: './', 
+  // Empty string is the "Magic Fix" for Capacitor Black Screens
+  base: '', 
   build: {
     outDir: 'dist',
+    assetsDir: 'assets',
     emptyOutDir: true,
   }
 });
