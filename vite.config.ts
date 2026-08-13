@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // Empty string is the "Magic Fix" for Capacitor Black Screens
-  base: '', 
+  // THIS IS THE FIX: It tells the phone to look inside the app for files
+  base: './', 
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
