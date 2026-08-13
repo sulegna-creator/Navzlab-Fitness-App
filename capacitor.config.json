@@ -2,9 +2,21 @@
   "appId": "com.navzlab.fitnessapp",
   "appName": "NAVZLAB Health",
   "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost",
+    "cleartext": true
+  },
   "plugins": {
     "AdMob": {
       "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#090d16",
+      "showSpinner": true,
+      "spinnerColor": "#10b981"
     }
   }
 }
