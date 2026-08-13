@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdMob } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen'; // IMPORT THIS
 import { Navigation } from './components/Navigation';
 import { Header } from './components/Header';
 import { HomeDashboard } from './components/HomeDashboard';
@@ -17,10 +18,23 @@ export function App() {
   const [isPremium] = useState(() => localStorage.getItem('navzlab_is_premium') === 'true');
 
   useEffect(() => {
-    // Initialize AdMob safely
-    if (Capacitor.isNativePlatform()) {
-      AdMob.initialize({ initializeForTesting: true }).catch(err => console.log(err));
-    }
+    const initApp = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // 1. Initialize AdMob
+          await AdMob.initialize({ initializeForTesting: true });
+          
+          // 2. FORCE HIDE THE LOADING SCREEN
+          await SplashScreen.hide(); 
+          
+          console.log("App Ready and Loading Screen Hidden");
+        } catch (e) {
+          // Even if AdMob fails, hide the loading screen so user can see dashboard
+          await SplashScreen.hide();
+        }
+      }
+    };
+    initApp();
   }, []);
 
   return (
