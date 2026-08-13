@@ -17,7 +17,9 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install @capacitor-community/admob@6.0.0 canvas-confetti@1.9.3
 
       - name: Build Web Project
         run: npm run build:web
@@ -25,28 +27,28 @@ jobs:
       - name: Install Capacitor CLI
         run: npm install @capacitor/cli@6.0.0 @capacitor/core@6.0.0 @capacitor/android@6.0.0
 
-      - name: Rebuild Android Project (CRITICAL FIX)
+      - name: Rebuild Android Project
         run: |
-          # 1. Clear the "hollow" folder to fix the 'gradlew' missing error
+          # 1. Clear everything to fix missing gradlew errors
           rm -rf android
           
-          # 2. Recreate the Android project from scratch (This creates gradlew)
+          # 2. Create fresh Android project
           npx cap add android
           
-          # 3. Create the Firebase file from our known Project ID
+          # 3. Create Google Services file for Firebase
           mkdir -p android/app
           echo '{"project_info":{"project_number":"410660970265","project_id":"shaped-xylopolist-5q6d2","storage_bucket":"shaped-xylopolist-5q6d2.firebasestorage.app"},"client":[{"client_info":{"mobilesdk_app_id":"1:410660970265:android:b7204c338873ee14cefb017b","android_client_info":{"package_name":"com.navzlab.fitness"}},"api_key":[{"current_key":"AIzaSyDCPDplwnlrhPpNQPoQjcxHP5yWfZw6uVg"}],"services":{"appinvite_service":{"other_platform_oauth_client":[{"client_id":"410660970265-t5k6td8q6j3882n0b1ia61st332hc8ea.apps.googleusercontent.com","client_type":3}]}}}]}' > android/app/google-services.json
 
       - name: AdMob & Realme Network Fix
         run: |
-          # Force the App Name
+          # 1. Set the App Name
           echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">NAVZLAB Health</string><string name="title_activity_main">NAVZLAB Health</string></resources>' > android/app/src/main/res/values/strings.xml
           
-          # Inject AdMob ID and enable network traffic for Render
+          # 2. Inject AdMob ID and Unlock Render connection (Realme fix)
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' android/app/src/main/AndroidManifest.xml
           
-          # Android 11 Queries Fix
+          # 3. Android 11 Visibility Fix
           sed -i '/<\/manifest>/i \    <queries><package android:name="com.android.vending" /><\/queries>' android/app/src/main/AndroidManifest.xml
 
       - name: Sync Capacitor
@@ -67,5 +69,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NAVZLAB-ULTIMATE-V1
+          name: NAVZLAB-STABLE-V93
           path: android/app/build/outputs/apk/debug/app-debug.apk
