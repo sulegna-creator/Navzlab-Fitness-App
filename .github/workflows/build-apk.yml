@@ -17,10 +17,7 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: |
-          npm install
-          # Ensure critical mobile packages are present
-          npm install @capacitor-community/admob@6.0.0 canvas-confetti@1.9.3
+        run: npm install
 
       - name: Build Web Project
         run: npm run build:web
@@ -33,14 +30,32 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Surgical AdMob & Android 11 Fix
+      - name: Surgical AdMob & Identity Fix
         run: |
-          # 1. Force the App Name in strings.xml
+          # 1. Force the App Name
           echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">NAVZLAB Health</string><string name="title_activity_main">NAVZLAB Health</string></resources>' > android/app/src/main/res/values/strings.xml
           
-          # 2. Inject AdMob ID and Cleartext Traffic (Crash/Network Fix)
-          # We add cleartext traffic so it can talk to your Render server
+          # 2. Crash Fix: Inject AdMob ID and Cleartext Traffic
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
+          sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' android/app/src/main/AndroidManifest.xml
           
-          # We inject the AdMob ID before the end of the application tag
-          sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APP
+          # 3. Android 11 Fix: Queries
+          sed -i '/<\/manifest>/i \    <queries><package android:name="com.android.vending" /><\/queries>' android/app/src/main/AndroidManifest.xml
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NAVZLAB-STABLE-FIX
+          path: android/app/build/outputs/apk/debug/app-debug.apk
